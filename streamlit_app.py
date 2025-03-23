@@ -10,7 +10,7 @@ from langchain.document_loaders import PyPDFLoader
 from langchain import hub
 
 # Set API key (Replace with your actual key)
-os.environ["GROQ_API_KEY"] = "your_groq_api_key_here"
+os.environ["GROQ_API_KEY"] = "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"
 
 # Initialize LLM and Embeddings
 llm = ChatGroq(model="llama3-8b-8192")
