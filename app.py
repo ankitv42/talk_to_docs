@@ -1,6 +1,6 @@
-import streamlit as st
 import os
 import tempfile
+import streamlit as st
 from langchain_community.vectorstores import FAISS
 from langchain_groq import ChatGroq
 from langchain_community.embeddings import HuggingFaceBgeEmbeddings
@@ -9,18 +9,26 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain.document_loaders import PyPDFLoader
 from langchain import hub
 
-# Set API key (replace with your actual key)
-os.environ["GROQ_API_KEY"] = "your_groq_api_key"
+# Set API key (Replace with your actual key)
+os.environ["GROQ_API_KEY"] = "your_groq_api_key_here"
 
-# Streamlit UI
+# Initialize LLM and Embeddings
+llm = ChatGroq(model="llama3-8b-8192")
+model_name = "BAAI/bge-small-en"
+hf_embeddings = HuggingFaceBgeEmbeddings(
+    model_name=model_name,
+    model_kwargs={'device': 'cpu'},
+    encode_kwargs={'normalize_embeddings': True}
+)
+
+# Streamlit App
 st.title("📄 PDF Chatbot with RAG")
 st.write("Upload a PDF and ask questions!")
 
 # File uploader
 uploaded_file = st.file_uploader("Upload a PDF", type="pdf")
 
-if uploaded_file:
-    # Save uploaded PDF temporarily
+if uploaded_file is not None:
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_file:
         temp_file.write(uploaded_file.read())
         temp_file_path = temp_file.name
@@ -28,15 +36,6 @@ if uploaded_file:
     # Load and process PDF
     loader = PyPDFLoader(temp_file_path)
     docs = loader.load()
-
-    # Initialize LLM and Embeddings
-    llm = ChatGroq(model="llama3-8b-8192")
-    model_name = "BAAI/bge-small-en"
-    hf_embeddings = HuggingFaceBgeEmbeddings(
-        model_name=model_name,
-        model_kwargs={'device': 'cpu'},
-        encode_kwargs={'normalize_embeddings': True}
-    )
 
     # Split text
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
@@ -59,10 +58,15 @@ if uploaded_file:
         | llm
     )
 
-    # User Query
-    user_query = st.text_input("Ask a question from the PDF:")
+    st.success("PDF processed successfully! Now ask questions.")
 
-    if user_query:
-        response = rag_chain.invoke(user_query)
-        st.write("### 🤖 AI Response:")
-        st.write(response)
+    # Query input
+    query = st.text_input("Ask a question about the PDF:")
+
+    if st.button("Submit"):
+        if query:
+            response = rag_chain.invoke(query).content
+            st.write("### AI Response:")
+            st.write(response)
+        else:
+            st.warning("Please enter a question.")
